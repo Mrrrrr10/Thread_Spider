@@ -9,7 +9,7 @@ import threading
 import pymysql
 from queue import Queue
 from scrapy.selector import Selector
-from Selenium_Airbnb import get_listing_id
+from .Selenium_Airbnb import get_listing_id
 import pymongo
 conn = pymysql.connect(host="127.0.0.1", user='root', password='104758993',
                        database='spider', port=3306, charset="utf8")
@@ -43,36 +43,23 @@ class Producer(threading.Thread):
         response = requests.get(url, headers=self.headers, proxies=proxy, verify=False)
         Hotel_tags = '-'.join(Selector(text=response.text).xpath('//span[@class="_ju40xgb"]/span/text()').extract())
         Hotel_title = Selector(text=response.text).xpath('//div[@class="_18gim6s4"]/h1/text()').extract()
-        if Hotel_title:
-            Hotel_title = Hotel_title[0]
-        else:
-            Hotel_title = ''
+        Hotel_title = Hotel_title[0] if Hotel_title else ''
         Hotel_facilities_traffic = Selector(text=response.text).xpath('//div[@class="_1thk0tsb"]/span/text()').extract()
         Hotel_facilities = '-'.join([item for item in Hotel_facilities_traffic[:4]])
         Hotel_traffic = '-'.join([item for item in Hotel_facilities_traffic[-3:]])
 
         Hotel_location = Selector(text=response.text).xpath('//div[@class="_190019zr"]/text()').extract()
-        if Hotel_location:
-            Hotel_location = Hotel_location[0].strip().replace('、', '-')
-        else:
-            Hotel_location = ''
+        Hotel_location = Hotel_location[0].strip().replace('、', '-') if Hotel_location else ''
+
         Hotel_addr = Selector(text=response.text).xpath('//div[@id="location"]/div/div/div/section/div[3]/div/div/div/div/p/span/span/text()')
-        if Hotel_addr:
-            Hotel_addr = Hotel_addr.extract()[0].strip()
-        else:
-            Hotel_addr = ''
-        Hotel_travel_information = Selector(text=response.text).xpath(
-             '//div[@class="_11oyobo"]/div/div/div/p/span/span/text()')
-        if Hotel_travel_information:
-            Hotel_travel_information = ''.join([item.strip() for item in Hotel_travel_information.extract()])
-        else:
-            Hotel_travel_information = ''
+        Hotel_addr = Hotel_addr.extract()[0].strip() if Hotel_addr else ''
+
+        Hotel_travel_information = Selector(text=response.text).xpath('//div[@class="_11oyobo"]/div/div/div/p/span/span/text()')
+        Hotel_travel_information = ''.join([item.strip() for item in Hotel_travel_information.extract()]) if Hotel_travel_information else  ''
 
         Owner_name = Selector(text=response.text).xpath('//div[@class="_1iti0ju"]/span/text()').extract()
-        if Owner_name:
-            Owner_name = Owner_name[0]
-        else:
-            Owner_name = ''
+        Owner_name = Owner_name[0] if Owner_name else ''
+
         Owner_sign = '-'.join([item.strip() for item in Selector(text=response.text).xpath('//span[@class="_1vzhbuir"]/text()').extract()])
         Owner_info = Owner_name + Owner_sign
 
@@ -84,15 +71,11 @@ class Producer(threading.Thread):
         Hotel_check_in_time = list(zip(Hotel_check_in_type, Hotel_check_in_time))
 
         Hotel_comment_star = Selector(text=response.text).xpath('//div[@itemprop="ratingValue"]/span/@aria-label').extract()
-        if Hotel_comment_star:
-            Hotel_comment_star = Hotel_comment_star[0].strip()
-        else:
-            Hotel_comment_star = ''
+        Hotel_comment_star = Hotel_comment_star[0].strip() if Hotel_comment_star else ''
+
         Hotel_comment_num = Selector(text=response.text).xpath('//div[@class="_i6dgfcq"]/div/div/span/span/text()').extract()
-        if Hotel_comment_num:
-            Hotel_comment_num = Hotel_comment_num[0]
-        else:
-            Hotel_comment_num = ''
+        Hotel_comment_num = Hotel_comment_num[0] if Hotel_comment_num else ''
+
         Hotel_score_type = Selector(text=response.text).xpath('//div[@class="_iq8x9is"]/span/text()').extract()
         Hotel_score_type_star = Selector(text=response.text).xpath('//div[@class="_1iu38l3"]/span/@aria-label').extract()
         Hotel_score = list(zip(Hotel_score_type, Hotel_score_type_star))
@@ -185,6 +168,7 @@ class Consumer(threading.Thread):
         Chengdu_collection = Hotel_info['Chengdu_collection']  # 创建数据表
         Chengdu_collection.insert_one(data)
         print("--- 写入完成 ---")
+
 
 def main():
     cookie, x_csrf_token, id_queue, url_queue = get_listing_id()
